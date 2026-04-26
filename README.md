@@ -9,6 +9,10 @@
 
 ▶ **[Watch Full Demo on YouTube](https://www.youtube.com/watch?v=-cgO3RlOce4)**
 
+## Web UI
+
+![Cyberpunk Control UI](docs/ui_screenshot.jpg)
+
 A fully functional industrial robot control system built from scratch using **Claude Code Opus 4.7** as the primary development partner. What would typically take 2–4 weeks of engineering was completed in a single **4.5-hour session**.
 
 ---
