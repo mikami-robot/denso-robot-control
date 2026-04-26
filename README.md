@@ -3,6 +3,12 @@
 
 > *"Weeks of industrial integration, done in an afternoon."*
 
+## Demo
+
+[![Demo Video](https://img.youtube.com/vi/-cgO3RlOce4/maxresdefault.jpg)](https://www.youtube.com/watch?v=-cgO3RlOce4)
+
+▶ **[Watch Full Demo on YouTube](https://www.youtube.com/watch?v=-cgO3RlOce4)**
+
 A fully functional industrial robot control system built from scratch using **Claude Code Opus 4.7** as the primary development partner. What would typically take 2–4 weeks of engineering was completed in a single **4.5-hour session**.
 
 ---
