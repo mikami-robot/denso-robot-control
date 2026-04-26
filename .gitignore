@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.venv/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ログ・一時ファイル
+*.log
+/tmp/
+*.tmp
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>産業用ロボット制御システム構築レポート — Claude Code Opus 4.7</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cyan:    #00f5ff;
+    --green:   #00ff41;
+    --red:     #ff003c;
+    --amber:   #ffb300;
+    --purple:  #9b59b6;
+    --bg:      #020408;
+    --surface: #060c16;
+    --card:    #090f1e;
+    --border:  #1a3a50;
+    --text:    #b0d0e0;
+    --dim:     #5a8faa;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Helvetica Neue", "Hiragino Sans", "Yu Gothic", sans-serif;
+    line-height: 1.7;
+    padding: 40px 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  /* ── HEADER ── */
+  .report-header {
+    border: 1px solid var(--cyan);
+    padding: 40px;
+    margin-bottom: 40px;
+    position: relative;
+    background: linear-gradient(135deg, #020408, #060c16);
+    box-shadow: 0 0 40px rgba(0,245,255,0.12);
+  }
+  .report-header::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, #00f5ff, #ff006e, #00ff41, #ffb300, #00f5ff);
+  }
+  .report-header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--cyan);
+    text-shadow: 0 0 20px rgba(0,245,255,0.5);
+    margin-bottom: 12px;
+  }
+  .report-header .subtitle {
+    font-size: 15px;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .meta-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px;
+    text-align: center;
+  }
+  .meta-cell .label { font-size: 11px; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; }
+  .meta-cell .value { font-size: 22px; font-weight: 700; color: var(--cyan); margin-top: 4px; }
+  /* ── SECTIONS ── */
+  section { margin-bottom: 40px; }
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--cyan);
+    border-left: 4px solid var(--cyan);
+    padding-left: 16px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(0,245,255,0.3);
+    letter-spacing: 0.03em;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--amber);
+    margin: 20px 0 10px;
+  }
+  p { margin-bottom: 12px; color: var(--text); font-size: 15px; }
+  /* ── CARD ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .card::before {
+    content: '';
+    position: absolute; left: 0; top: 0;
+    width: 4px; height: 100%;
+    background: var(--cyan);
+    opacity: 0.4;
+  }
+  .card.red::before   { background: var(--red); }
+  .card.green::before { background: var(--green); }
+  .card.amber::before { background: var(--amber); }
+  .card.purple::before{ background: var(--purple); }
+  /* ── SYSTEM OVERVIEW ── */
+  .hw-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .hw-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px;
+    text-align: center;
+  }
+  .hw-card .icon { font-size: 36px; margin-bottom: 8px; }
+  .hw-card .name { font-size: 14px; font-weight: 700; color: var(--cyan); }
+  .hw-card .spec { font-size: 12px; color: var(--dim); margin-top: 4px; }
+  /* ── TIMELINE ── */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before {
+    content: '';
+    position: absolute; left: 8px; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 28px; }
+  .tl-item::before {
+    content: '';
+    position: absolute; left: -28px; top: 6px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+  }
+  .tl-item.red::before   { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .tl-item.green::before { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .tl-item.amber::before { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .tl-phase {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 4px;
+  }
+  .tl-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .tl-body { font-size: 14px; color: var(--dim); }
+  /* ── TROUBLE TABLE ── */
+  .trouble-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  .trouble-table th {
+    background: var(--surface);
+    color: var(--cyan);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+  .trouble-table td {
+    padding: 12px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .trouble-table tr:hover td { background: rgba(0,245,255,0.03); }
+  .badge-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  .badge-red    { background: rgba(255,0,60,0.15);   color: var(--red);   border: 1px solid var(--red); }
+  .badge-amber  { background: rgba(255,179,0,0.15);  color: var(--amber); border: 1px solid var(--amber); }
+  .badge-green  { background: rgba(0,255,65,0.15);   color: var(--green); border: 1px solid var(--green); }
+  .badge-cyan   { background: rgba(0,245,255,0.12);  color: var(--cyan);  border: 1px solid var(--cyan); }
+  /* ── CODE BLOCK ── */
+  pre {
+    background: #010204;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-size: 13px;
+    color: #7fc8e0;
+    margin: 12px 0;
+    font-family: "Courier New", monospace;
+  }
+  /* ── INSIGHT BOX ── */
+  .insight {
+    background: rgba(0,245,255,0.05);
+    border: 1px solid rgba(0,245,255,0.3);
+    border-left: 4px solid var(--cyan);
+    padding: 18px 22px;
+    margin: 16px 0;
+    font-size: 15px;
+  }
+  .insight.red    { background: rgba(255,0,60,0.05);  border-color: rgba(255,0,60,0.3);   border-left-color: var(--red); }
+  .insight.green  { background: rgba(0,255,65,0.05);  border-color: rgba(0,255,65,0.3);   border-left-color: var(--green); }
+  .insight.amber  { background: rgba(255,179,0,0.05); border-color: rgba(255,179,0,0.3);  border-left-color: var(--amber); }
+  /* ── STAT ROW ── */
+  .stat-row {
+    display: flex;
+    gap: 16px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  .stat-box {
+    flex: 1;
+    min-width: 160px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px;
+    text-align: center;
+  }
+  .stat-box .n { font-size: 36px; font-weight: 800; color: var(--cyan); }
+  .stat-box .l { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  /* ── FOOTER ── */
+  .report-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    text-align: center;
+    color: var(--dim);
+    font-size: 13px;
+    margin-top: 60px;
+  }
+  ul { padding-left: 20px; margin: 8px 0; }
+  li { margin-bottom: 6px; font-size: 14px; color: var(--text); }
+  li::marker { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<div class="report-header">
+  <h1>産業用ロボット統合制御システム 構築レポート</h1>
+  <div class="subtitle">Claude Desktop → Claude Code Opus 4.7 (1M context) を用いたゼロからのシステム構築記録 ／ 2026年4月26日 16:00〜22:30</div>
+  <div class="meta-grid">
+    <div class="meta-cell">
+      <div class="label">使用AI</div>
+      <div class="value" style="font-size:12px">Claude Desktop<br>→ Claude Code<br>Opus 4.7</div>
+    </div>
+    <div class="meta-cell">
+      <div class="label">総作業時間</div>
+      <div class="value">4h 30m</div>
+    </div>
+    <div class="meta-cell">
+      <div class="label">コンテキスト消費</div>
+      <div class="value">〜25%</div>
+    </div>
+    <div class="meta-cell">
+      <div class="label">接続ハードウェア数</div>
+      <div class="value">5台</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ 1. システム概要 ══════════════════ -->
+<section>
+  <h2>1. 構築したシステムの概要</h2>
+  <p>
+    産業用6軸ロボット（DENSO）を中心に、電動ハンド・産業用カメラ・Webカメラ・ゲームパッドを統合し、
+    Webブラウザから遠隔操作できるリアルタイム制御システムをゼロから構築した。
+    バックエンドはPython/Flask、フロントエンドはサイバーパンク風カスタムUI。
+  </p>
+
+  <div class="hw-grid">
+    <div class="hw-card">
+      <div class="icon">🦾</div>
+      <div class="name">DENSO 6軸ロボット</div>
+      <div class="spec">b-CAP TCP (192.168.127.13:5007)<br>スレーブモード + robot_move 制御</div>
+    </div>
+    <div class="hw-card">
+      <div class="icon">✊</div>
+      <div class="name">IAI 電動ハンド</div>
+      <div class="spec">Modbus RTU (38400bps, RS-485)<br>/dev/cu.usbserial-0001</div>
+    </div>
+    <div class="hw-card">
+      <div class="icon">📷</div>
+      <div class="name">Basler GigE カメラ</div>
+      <div class="spec">a2A3840-13gcBAS (4K)<br>pypylon / 192.168.127.100</div>
+    </div>
+    <div class="hw-card">
+      <div class="icon">🎥</div>
+      <div class="name">USB Webカメラ</div>
+      <div class="spec">OpenCV / AVFoundation<br>MJPEG ~30fps ストリーミング</div>
+    </div>
+    <div class="hw-card">
+      <div class="icon">🎮</div>
+      <div class="name">PS5 DualSense</div>
+      <div class="spec">pygame HID (Bluetooth/USB)<br>macOS 17buttons / 6axes</div>
+    </div>
+    <div class="hw-card">
+      <div class="icon">🌐</div>
+      <div class="name">Flask Web アプリ</div>
+      <div class="spec">Python 3.12 / ポート8080<br>サイバーパンク UI + REST API</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>最終アーキテクチャ</h3>
+    <pre>
+Browser (192.168.1.76:8080)
+    │ REST API / MJPEG stream
+    ▼
+Flask App (app.py)
+    ├── DensoRobot ─── b-CAP TCP ──▶ DENSO RC8 コントローラー
+    │     ├── Normal mode: robot_move() (PCボタン操作)
+    │     └── Slave mode:  slvMove 125Hz (Gamepad)
+    │           └── Velocity Buffer (gamepadスレッド分離)
+    ├── IAIHand ────── Modbus RTU ─▶ IAI 電動シリンダー
+    │     └── Hand Control Thread (Modbusブロッキング分離)
+    ├── BaslerCamera ─ pypylon GigE ▶ Basler 4K カメラ
+    ├── USBCamera ──── OpenCV ──────▶ USB Webカメラ
+    └── GamepadDriver ─ pygame HID ─▶ PS5 DualSense
+          └── 125Hz ポーリング → Velocity Buffer 書き込み</pre>
+  </div>
+</section>
+
+<!-- ══════════════════ 2. 作業タイムライン ══════════════════ -->
+<section>
+  <h2>2. 作業タイムライン（主要フェーズ）</h2>
+
+  <div class="card amber" style="margin-bottom:20px">
+    <p style="font-size:14px; color:var(--amber);">
+      ◈ <strong>前半フェーズ（16:00〜）は Claude Desktop で実施。</strong>
+      要件定義書の読み込み・初期コード生成・Basler カメラ IP 設定などを完了後、
+      Claude Code CLI (Opus 4.7) へ引き継ぎ。
+    </p>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item green">
+      <div class="tl-phase">Phase 0-1 — Claude Desktop ／ 16:00〜</div>
+      <div class="tl-title">要件定義書の読み込みと全ファイルの自動生成</div>
+      <div class="tl-body">
+        PDF 要件定義書を読み込み、システム全体の構成を把握。
+        <code>app.py / config.py / requirements.txt / hardware/*.py / templates/index.html</code>
+        計 9 ファイルをゼロから一括生成。初期の Flask バックエンドと
+        ダークテーマ Web UI のベースを完成させた。
+      </div>
+    </div>
+
+    <div class="tl-item amber">
+      <div class="tl-phase">Phase 0-2 — Claude Desktop</div>
+      <div class="tl-title">ネットワーク通信確認（DENSO / Basler）</div>
+      <div class="tl-body">
+        DENSO ロボットコントローラー (192.168.127.13) への PING / b-CAP UDP(5007) 疎通確認 → <strong>OK</strong>。<br>
+        Basler カメラは config の IP (192.168.1.100) に疎通できず。
+        GigE Vision の GVCP Discovery ブロードキャストを複数サブネットへ送信し、
+        <strong>実際のカメラ IP が 192.168.3.3 であることを発見</strong>。
+      </div>
+    </div>
+
+    <div class="tl-item red">
+      <div class="tl-phase">Phase 0-3 — Claude Desktop（難関）</div>
+      <div class="tl-title">Basler カメラ IP アドレス変更（GVCP プロトコル直接操作）</div>
+      <div class="tl-body">
+        pypylon の通常手順では IP 変更不可。GigE Vision 仕様書に基づき GVCP レジスタ
+        を Python ソケットで直接操作：<br>
+        ① 192.168.3.3 に一時 IP エイリアス追加（sudo / AppleScript）<br>
+        ② CCP レジスタで排他制御権取得<br>
+        ③ PersistentIP (0x064C)・SubnetMask (0x065C)・GW (0x066C) へ 192.168.127.100 を書き込み<br>
+        ④ IPConfig を PersistentIP モード (bit2=1) に変更<br>
+        ⑤ ForceIP コマンドをユニキャスト送信で即時適用<br>
+        ⑥ pypylon で 3840×2160px (4K) フレーム取得成功を確認<br>
+        <br>
+        ただし ForceIP は揮発性のため、<strong>電源再投入後に永続 IP が反映されることを確認して引き継ぎ</strong>。
+        カメラの config アドレスを <code>192.168.127.100</code> に更新済み。
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-phase">▶ Claude Code CLI (Opus 4.7) へ引き継ぎ</div>
+      <div class="tl-title">— 以下は Claude Code での作業 —</div>
+      <div class="tl-body"></div>
+    </div>
+
+    <div class="tl-item green">
+      <div class="tl-phase">Phase 1 — 初期確認</div>
+      <div class="tl-title">既存コードの動作確認・プロセス衝突の解決</div>
+      <div class="tl-body">
+        app.py の初回起動確認。Basler カメラが「他のアプリが使用中」エラー。
+        <code>lsof</code> で前回の残留プロセス（PID 87376）を特定・kill して解決。
+      </div>
+    </div>
+
+    <div class="tl-item amber">
+      <div class="tl-phase">Phase 2 — Gamepad 初期化</div>
+      <div class="tl-title">PS5 DualSense の検出とボタンマッピング</div>
+      <div class="tl-body">
+        起動前にコントローラーが未接続 → 検出失敗。再起動で解決。<br>
+        macOS 固有の HID ボタンインデックスが想定と相違。
+        デバッグログで全ボタン押下を記録し実測でマッピングを確定：
+        <strong>L1=10, R1=9, PS=7（一般的な文書と異なる）</strong>
+      </div>
+    </div>
+
+    <div class="tl-item red">
+      <div class="tl-phase">Phase 3 — IAI ハンド制御（難関①）</div>
+      <div class="tl-title">Modbus 通信と状態不整合の解決</div>
+      <div class="tl-body">
+        原点復帰後にハンドが開かない問題。原因：原点復帰完了時点の物理位置（全開）と
+        ソフトウェア状態（_hand_open=True）が一致していたが、
+        初回 toggle で「閉じる」コマンドが来ていた。<br>
+        原点復帰後に明示的に open_pos(3900) を書き込み、物理・ソフト状態を同期。
+      </div>
+    </div>
+
+    <div class="tl-item red">
+      <div class="tl-phase">Phase 4 — b-CAP スレーブモード（最大の難関）</div>
+      <div class="tl-title">DENSO ロボット通信の根本的な問題解決</div>
+      <div class="tl-body">
+        以下の問題が連続発生し、最も多くの時間を費やしたフェーズ。
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-phase">Phase 5 — ハイブリッドモード設計</div>
+      <div class="tl-title">PCモード(robot_move) × Gamepadモード(slvMove) の分離</div>
+      <div class="tl-body">
+        ユーザーの指摘「根本的に間違っている」を受け、参照コードを分析。
+        離散ステップ操作には robot_move()、連続追従にはスレーブモードと使い分ける
+        ハイブリッド設計を採用し、モード切替APIを実装。
+      </div>
+    </div>
+
+    <div class="tl-item amber">
+      <div class="tl-phase">Phase 6 — 制御品質の改善</div>
+      <div class="tl-title">ガタつき解消：デルタバッファ → 速度バッファへの転換</div>
+      <div class="tl-body">
+        ゲームパッドで動かすとロボットがガタガタする問題。
+        原因：積み上げ型デルタバッファの周期ずれによる二重加算。
+        上書き型速度バッファに変更し、毎サイクル一定ステップが適用されるよう修正。
+      </div>
+    </div>
+
+    <div class="tl-item green">
+      <div class="tl-phase">Phase 7 — UI 構築</div>
+      <div class="tl-title">サイバーパンク風インターフェースの構築</div>
+      <div class="tl-body">
+        カメラ2画面・座標値大表示・タブ切替・方向ボタン・グラデーション・効果音を実装。
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════ 3. 問題と解決策 ══════════════════ -->
+<section>
+  <h2>3. 行き詰まった問題と解決策の詳細</h2>
+
+  <table class="trouble-table">
+    <thead>
+      <tr>
+        <th>問題</th>
+        <th>エラーコード / 現象</th>
+        <th>難易度</th>
+        <th>根本原因</th>
+        <th>解決策</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>【前半】</strong><br>Basler カメラの IP 未設定・発見不可</td>
+        <td>PING 不達<br>GigE Discovery 無応答</td>
+        <td><span class="badge-red">高</span></td>
+        <td>カメラ出荷時 IP 未設定のためリンクローカル (169.254.x.x) で起動。
+        pypylon では変更 API なし</td>
+        <td>GVCP プロトコルで PersistentIP レジスタ (0x064C) を直接書き込み。
+        ForceIP コマンドで 192.168.127.100 に即時適用。
+        電源再投入で永続化</td>
+      </tr>
+      <tr>
+        <td>Basler カメラが起動しない (引き継ぎ後)</td>
+        <td><code>0xE1018006</code><br>Controlled by another app</td>
+        <td><span class="badge-amber">中</span></td>
+        <td>前回セッションの残留プロセスが GigE バスを占有</td>
+        <td><code>lsof / kill</code> で残留プロセスを強制終了</td>
+      </tr>
+      <tr>
+        <td>slvMove API 呼び出しエラー</td>
+        <td>AttributeError:<br>int has no attribute slvMove</td>
+        <td><span class="badge-amber">中</span></td>
+        <td><code>self._h_robot</code> は int ハンドル。<br>直接メソッド呼び出し不可</td>
+        <td><code>bcap_client.robot_execute(handle, "slvMove", pos)</code> に修正</td>
+      </tr>
+      <tr>
+        <td>初期位置[0,0,0]への急動作</td>
+        <td>ロボットが起動直後に<br>原点へ急移動（危険）</td>
+        <td><span class="badge-red">高</span></td>
+        <td>target_pos のデフォルト値が [0,0,0,0,0,0]<br>初期化時に CurPos を取得していなかった</td>
+        <td>connect() で Motor ON 直後に CurPos を取得し<br>target_pos の初期値として設定</td>
+      </tr>
+      <tr>
+        <td>スレーブモード速度違反<br>（スティック即クラッシュ）</td>
+        <td><code>0x83500121</code><br><code>0x84201482</code></td>
+        <td><span class="badge-red">最高</span></td>
+        <td>デフォルト座標系(Tool0)で rx≈180, ry≈0 → <strong>手首特異点近傍</strong>。<br>微小な TCP 移動でも関節速度が爆発</td>
+        <td><strong>robot_change(HRobot, "Tool1")</strong> をTakeArm直後に追加。<br>Tool1 では ry≈−0.15, rz≈90° で特異点回避</td>
+      </tr>
+      <tr>
+        <td>gamepad ガタガタ問題</td>
+        <td>ロボットが断続的にガタつく<br>（可聴レベルの振動）</td>
+        <td><span class="badge-red">高</span></td>
+        <td>デルタバッファ（積み上げ方式）はgampad/slaveの<br>周期ずれで二重加算・ゼロ加算が交互発生</td>
+        <td><strong>速度バッファ（上書き方式）</strong>に変更。<br>gamepad は "今この速度" を毎フレーム書くだけ</td>
+      </tr>
+      <tr>
+        <td>IAI ハンドの応答遅延</td>
+        <td>ボタンを離してから<br>ハンドが止まるまでに遅延</td>
+        <td><span class="badge-amber">中</span></td>
+        <td>Modbus RTU write (~15ms) がgamepadスレッドを<br>ブロックし、ボタン離し検出が遅延</td>
+        <td><strong>hand-ctrl 専用スレッド</strong>を分離。<br>gamepad は velocity 変数を書くだけ。即停止</td>
+      </tr>
+      <tr>
+        <td>L1/R1 ボタンが無反応</td>
+        <td>RX 軸が全く動かない</td>
+        <td><span class="badge-amber">中</span></td>
+        <td>macOS DualSense の実際のマッピングが文書と相違。<br>デバッグログで確認: <strong>L1=10, R1=9</strong></td>
+        <td>全ボタン押下ログを仕込み実測でインデックス特定。<br>BTN_L1=10, BTN_R1=9 に修正</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ══════════════════ 4. 技術的考察 ══════════════════ -->
+<section>
+  <h2>4. Claude Code を用いた産業機器システム構築の考察</h2>
+
+  <div class="card green">
+    <h3>✅ Claude Code が特に有効だった場面</h3>
+    <ul>
+      <li><strong>プロトコル実装の高速化</strong>：b-CAP、Modbus RTU など独自プロトコルの実装を、参照コードを見せるだけで短時間に正確に移植できた</li>
+      <li><strong>スレッドセーフ設計</strong>：複数ハードウェアを並列制御する際のロック設計・競合回避を、会話の流れの中で自然に実装できた</li>
+      <li><strong>エラー原因の仮説提示</strong>：エラーコード（例：0x83500121）の意味を解析し、複数の仮説を提示。特異点問題のような深い原因も技術的に掘り下げた</li>
+      <li><strong>リファクタリング速度</strong>：「デルタバッファ → 速度バッファ」のような設計変更を、影響範囲を理解した上で迅速に実装できた</li>
+      <li><strong>UI/UX 実装</strong>：サイバーパンク風 CSS・Web Audio API・グラデーションアニメーションを、口頭指示から高品質で実装</li>
+    </ul>
+  </div>
+
+  <div class="card red">
+    <h3>⚠️ 行き詰まりやすかった点・改善余地</h3>
+    <ul>
+      <li><strong>ハードウェア固有の隠れた仕様</strong>：「Tool1 座標系が必須」のような DENSO 固有の暗黙仕様は、参照コードを提示されて初めて気づいた。ドキュメントなし・実機なしでは解決が困難</li>
+      <li><strong>実機テストなしの推測的修正</strong>：エラーコードから原因を推測して修正 → 試す → また別のエラー、というサイクルが数往復発生した。実機フィードバックが解決の鍵だった</li>
+      <li><strong>macOS 固有の挙動</strong>：DualSense のボタンマッピング、カメラバックエンドなど macOS 特有の差異は、実測なしには正確に把握できなかった</li>
+      <li><strong>制御理論の境界</strong>：速度バッファ問題などのリアルタイム制御の設計判断は、ユーザーからの「ガタガタする」という現場フィードバックがなければ気づけなかった</li>
+    </ul>
+  </div>
+
+  <div class="card amber">
+    <h3>💡 産業機器 × AI アシスタントの効果的な活用法</h3>
+
+    <div class="insight">
+      <strong>参照コードを必ず共有する</strong><br>
+      動作実績のあるコード（今回の robot_control.py, robot_move_main.py）を提示することで、
+      AIは暗黙の仕様・座標系・API作法を学習し、正確な実装に大幅に近づける。
+      「うまくいかない」だけの説明より、「このコードでは動く」を見せる方が 10倍速い。
+    </div>
+
+    <div class="insight amber">
+      <strong>エラーコードをそのまま渡す</strong><br>
+      0x83500121 のような16進数エラーコードを省略せず渡すことで、
+      AI は製造メーカーのエラー体系を解析し、仮説を絞り込める。
+      「エラーが出る」より「0x83500121 が出る」の方が根本原因に辿り着くのが早い。
+    </div>
+
+    <div class="insight green">
+      <strong>段階的な動作確認をAIに指示する</strong><br>
+      「全部動かして」ではなく「まずロボットだけ、次にカメラ、最後に統合」のように
+      段階分割することで、AI も問題の切り分けと解決が容易になる。
+      今回も、動作確認コマンドを逐次実行する形で品質を確保した。
+    </div>
+  </div>
+
+  <div class="card purple">
+    <h3>📊 作業効率の定量的評価</h3>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="n">4.5h</div>
+        <div class="l">総作業時間<br>16:00〜22:30</div>
+      </div>
+      <div class="stat-box">
+        <div class="n">5台</div>
+        <div class="l">統合ハードウェア数</div>
+      </div>
+      <div class="stat-box">
+        <div class="n">7個</div>
+        <div class="l">解決した主要バグ</div>
+      </div>
+      <div class="stat-box">
+        <div class="n">〜600</div>
+        <div class="l">生成コード行数 (Python)</div>
+      </div>
+      <div class="stat-box">
+        <div class="n">25%</div>
+        <div class="l">コンテキスト消費<br>(1M tokens中)</div>
+      </div>
+    </div>
+    <p>
+      熟練エンジニアが同等のシステムを単独で構築する場合、
+      仕様書解読・ドライバ実装・デバッグを含めると <strong>2〜4週間</strong> を要すると想定される。
+      Claude Code との協業により <strong>4時間30分（16:00〜22:30）</strong> での完成を実現。
+      ただし、実機フィードバックと参照コードの提供が解決の鍵であり、
+      <strong>「AIが知識を持ち、人間が現場情報を提供する」協業モデル</strong>が最も効率的だった。
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════ 5. 技術的成果 ══════════════════ -->
+<section>
+  <h2>5. 主要な技術的成果</h2>
+
+  <div class="card">
+    <h3>速度バッファによるガタつき解消（最も重要な発見）</h3>
+    <p>
+      積み上げ型デルタバッファはgamepadとslaveのサイクルずれで二重加算が起きる。
+      上書き型速度バッファに変えることで、どちらが速くても「今この速度」が常に正確に伝わる。
+    </p>
+    <pre>
+# NG: 積み上げ → 周期ずれで二重加算・ゼロ加算
+delta_buf[i] += delta[i]   # gamepadが書く
+pos[i] += delta_buf[i]     # slaveが消費
+
+# OK: 上書き → 常に最新の速度コマンドが適用
+velocity[i] = delta[i]     # gamepadが書く (+=ではない)
+pos[i] += velocity[i]      # slaveが毎サイクル読む</pre>
+  </div>
+
+  <div class="card">
+    <h3>Tool1 座標系選択による特異点回避</h3>
+    <p>
+      DENSO RC8 でスレーブモードを使う際、<code>robot_change(HRobot, "Tool1")</code> を
+      TakeArm の直後に呼ばないと、デフォルト座標系(Tool0)で rx≈180°, ry≈0° の
+      手首特異点近傍に配置される。この状態では微小な TCP 移動で関節速度が発散し、
+      スレーブモードが即座にエラー終了する。
+    </p>
+    <pre>
+# この一行を入れないとスレーブモードが即クラッシュ
+m_bcapclient.robot_change(HRobot, "Tool1")   # ← 必須
+cur_pos = m_bcapclient.robot_execute(HRobot, "CurPos")
+# slvChangeMode(0x201) へ続く</pre>
+  </div>
+
+  <div class="card">
+    <h3>Modbus / b-CAP のスレッド分離</h3>
+    <p>
+      Python の GIL 環境で複数の通信プロトコルが競合するとタイミングが不安定になる。
+      各ハードウェアを専用スレッドに隔離し、共有変数（速度バッファ）のみで通信する設計が
+      最もガタつきが少なく、応答性も高かった。
+    </p>
+  </div>
+</section>
+
+<!-- ══════════════════ 6. 結論 ══════════════════ -->
+<section>
+  <h2>6. 結論</h2>
+
+  <div class="insight">
+    本プロジェクトは <strong>Claude Code Opus 4.7</strong> が産業用システム構築において
+    実用的な開発パートナーとなれることを示した。
+    b-CAP・Modbus RTU・GigE Vision など専門性の高いプロトコルを短時間で実装し、
+    リアルタイム制御の設計問題（特異点・周期ずれ・スレッド競合）を技術的に解決した。
+  </div>
+
+  <p>
+    最大の教訓は、<strong>「AIと人間の役割分担の明確化」</strong>だ。
+    AI はプロトコル実装・コード生成・エラー分析・設計提案を高速に行う。
+    人間は実機の現場フィードバック・参照コードの提供・最終判断を担う。
+    この協業モデルにより、従来の開発期間を大幅に短縮できることが実証された。
+  </p>
+
+  <p>
+    一方で、<strong>ハードウェア固有の暗黙仕様</strong>（座標系・ボタンマッピング・通信タイミング）は
+    実機テストなしには解決できない壁であり、AI はあくまで「現場情報を持つ専門家と協働する
+    高速なコーディングパートナー」として機能することが本質だと理解された。
+  </p>
+</section>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<div class="report-footer">
+  <p>本レポートは Claude Code Opus 4.7 (claude-opus-4-7[1m]) との対話を通じて構築されたシステムの記録です。</p>
+  <p style="margin-top:8px; color: #2a5a6a;">Generated: 2026-04-26 ／ Project: /Users/mikami/Documents/Claude-hack</p>
+</div>
+
+</body>
+</html>

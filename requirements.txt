@@ -1,0 +1,8 @@
+flask>=3.0.0
+flask-cors>=4.0.0
+opencv-python>=4.9.0
+pypylon>=3.0.0
+pymodbus>=3.6.0
+pyserial>=3.5
+pygame>=2.5.0
+numpy>=1.26.0

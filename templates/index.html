@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DENSO CONTROL SYS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cyan:    #00f5ff;
+      --green:   #00ff41;
+      --red:     #ff003c;
+      --bg:      #020408;
+      --surface: #060c16;
+      --card:    #080e1c;
+      --border:  #1a3a50;
+      --text:    #90c4d8;
+      --dim:     #5a8faa;   /* 明るいグレー青: どこでも見える */
+    }
+
+    body {
+      background: var(--bg);
+      background-image:
+        linear-gradient(rgba(0,245,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,255,0.018) 1px, transparent 1px);
+      background-size: 36px 36px;
+      color: var(--text);
+      font-family: "Courier New", "Lucida Console", monospace;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ネオングラデーション流れるアニメーション */
+    @keyframes grad-flow {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes border-glow {
+      0%,100% { box-shadow: 0 0 8px var(--cyan), 0 0 20px rgba(0,245,255,0.2); }
+      33%     { box-shadow: 0 0 8px #ff006e, 0 0 20px rgba(255,0,110,0.2); }
+      66%     { box-shadow: 0 0 8px #00ff41, 0 0 20px rgba(0,255,65,0.2); }
+    }
+
+    /* ヘッダーグラデーション光彩 */
+    header h1 {
+      background: linear-gradient(90deg, #00f5ff, #ff006e, #00ff41, #ffb300, #00f5ff);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: grad-flow 4s ease infinite;
+    }
+
+    /* 座標値グラデーション */
+    .coord-val {
+      background: linear-gradient(90deg, #00f5ff, #7b2fff, #00f5ff);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: grad-flow 3s ease infinite;
+      text-shadow: none !important;
+    }
+
+    /* coords ボーダーグロー */
+    .coords { animation: border-glow 6s ease infinite; }
+
+    /* scanlines */
+    body::after {
+      content: '';
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--cyan);
+      box-shadow: 0 0 20px rgba(0,245,255,0.12);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: var(--cyan);
+      text-shadow: 0 0 12px var(--cyan);
+      text-transform: uppercase;
+    }
+    .badges { display: flex; gap: 10px; }
+    .badge {
+      padding: 6px 16px;
+      border: 1px solid var(--text);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+    .badge.ok    { color: var(--green); border-color: var(--green); text-shadow: 0 0 8px var(--green); box-shadow: 0 0 12px rgba(0,255,65,0.25); }
+    .badge.error { color: var(--red);   border-color: var(--red);   text-shadow: 0 0 8px var(--red); }
+
+    /* ─── MAIN: left 2/3 cameras │ right 1/3 coords+controls ─── */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 10px;
+      padding: 10px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ─── LEFT: 2 cameras stacked ─── */
+    .left {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 10px;
+      min-height: 0;
+    }
+    .camera-card {
+      background: #000;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 10px rgba(0,245,255,0.06);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .camera-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      opacity: 0.5;
+    }
+    .camera-label {
+      padding: 8px 16px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .camera-card img {
+      flex: 1;
+      width: 100%;
+      object-fit: contain;
+      display: block;
+      background: #000;
+      min-height: 0;
+    }
+
+    /* ─── RIGHT: coord display + panel ─── */
+    .right {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ─── COORDINATE DISPLAY (big, ~1/3 width) ─── */
+    .coords {
+      background: var(--card);
+      border: 1px solid var(--cyan);
+      box-shadow: 0 0 24px rgba(0,245,255,0.12), inset 0 0 40px rgba(0,0,0,0.5);
+      padding: 14px 18px;
+      flex-shrink: 0;
+    }
+    .coords-header {
+      font-size: 18px;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .coord-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 3px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .coord-row:last-child { border-bottom: none; }
+    .coord-axis {
+      font-size: 2.0vw;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.12em;
+      opacity: 0.85;
+      min-width: 3vw;
+    }
+    .coord-val {
+      font-size: 2.2vw;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--cyan);
+      text-shadow: 0 0 16px var(--cyan), 0 0 30px rgba(0,245,255,0.3);
+      letter-spacing: 0.02em;
+      text-align: right;
+    }
+
+    /* ─── CONTROL PANEL ─── */
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      min-height: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 14px 18px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 4px; height: 100%;
+      background: var(--cyan);
+      opacity: 0.2;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    /* mode */
+    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-mode {
+      padding: 14px 6px;
+      border: 1px solid var(--text);
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-mode.active {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      text-shadow: 0 0 10px var(--cyan);
+      box-shadow: 0 0 18px rgba(0,245,255,0.35), inset 0 0 0 1px var(--cyan);
+      background: rgba(0,245,255,0.06);
+    }
+    .btn-mode:hover:not(.active) { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 10px rgba(0,245,255,0.2); }
+
+    /* ─── DIRECTIONAL ARROW BUTTONS ─── */
+    /* 斜め角カット (chamfered) + ネオングロー — サイバーパンク定番スタイル */
+    .motion-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .axis-group { display: flex; flex-direction: column; gap: 6px; }
+    .axis-label {
+      font-size: 16px;
+      color: var(--text);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .btn-row { display: flex; gap: 6px; }
+
+    /* 斜め角カット共通 */
+    .btn-dir {
+      flex: 1;
+      height: 68px;
+      border: 1px solid var(--text);
+      background: var(--card);
+      color: var(--text);
+      font-size: 30px;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.1s, background 0.1s, box-shadow 0.1s;
+      outline: none;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px;
+      /* chamfered top-right & bottom-left corners */
+      clip-path: polygon(
+        0 0, calc(100% - 12px) 0,
+        100% 12px, 100% 100%,
+        12px 100%, 0 calc(100% - 12px)
+      );
+    }
+    .btn-dir .lbl {
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      line-height: 1;
+      opacity: 0.7;
+    }
+    .btn-dir:hover {
+      color: var(--cyan);
+      background: rgba(0,245,255,0.07);
+      box-shadow: inset 0 0 0 1px var(--cyan), 0 0 14px rgba(0,245,255,0.25);
+      text-shadow: 0 0 10px var(--cyan);
+    }
+    .btn-dir:active  { transform: scale(0.93); color: #fff; }
+    .btn-dir:disabled { opacity: 0.2; cursor: not-allowed; }
+
+    /* 回転ボタンは magenta アクセント */
+    .btn-dir.rot:hover {
+      color: #ff80ff;
+      background: rgba(255,0,110,0.07);
+      box-shadow: inset 0 0 0 1px #ff80ff, 0 0 14px rgba(255,0,110,0.2);
+      text-shadow: 0 0 10px #ff80ff;
+    }
+
+    /* gripper */
+    .btn-gripper {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid var(--green);
+      background: transparent;
+      color: var(--green);
+      font-family: inherit;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-shadow: 0 0 8px var(--green);
+      transition: all 0.15s;
+    }
+    .btn-gripper:hover { background: rgba(0,255,65,0.08); box-shadow: 0 0 14px rgba(0,255,65,0.2); }
+    .btn-gripper:disabled { opacity: 0.2; cursor: not-allowed; }
+
+    /* reconnect */
+    .btn-reconnect {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid var(--amber, #ffb300);
+      background: transparent;
+      color: var(--amber, #ffb300);
+      font-family: inherit;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-reconnect:hover { background: rgba(255,179,0,0.08); box-shadow: 0 0 12px rgba(255,179,0,0.25); }
+    .btn-reconnect:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* estop */
+    .btn-estop {
+      width: 100%;
+      padding: 20px;
+      border: 2px solid var(--red);
+      background: transparent;
+      color: var(--red);
+      font-family: inherit;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-shadow: 0 0 10px var(--red);
+      animation: estop-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes estop-pulse {
+      0%,100% { box-shadow: 0 0 4px rgba(255,0,60,0.2); }
+      50%      { box-shadow: 0 0 20px rgba(255,0,60,0.55); }
+    }
+    .btn-estop:hover { background: rgba(255,0,60,0.1); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--cyan);
+      box-shadow: 0 0 16px rgba(0,245,255,0.08);
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    footer span { color: var(--text); }
+    .status-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 7px;
+      background: var(--dim);
+    }
+    .status-dot.ok  { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .status-dot.err { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+    /* ─── MODE TABS ─── */
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .tab {
+      padding: 14px 6px;
+      border: 1px solid var(--text);
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    }
+    .tab.active {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      text-shadow: 0 0 12px var(--cyan);
+      box-shadow: 0 0 20px rgba(0,245,255,0.3), inset 0 0 0 1px var(--cyan);
+      background: rgba(0,245,255,0.06);
+    }
+    .tab:hover:not(.active) { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 10px rgba(0,245,255,0.15); }
+
+    /* ─── TAB PANELS ─── */
+    .tab-content { flex: 1; min-height: 0; overflow: hidden; }
+    .tab-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      height: 100%;
+    }
+    .tab-panel.active { display: flex; }
+
+    /* gamepad active indicator */
+    .gp-indicator {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--cyan);
+      background: rgba(0,245,255,0.03);
+      box-shadow: 0 0 30px rgba(0,245,255,0.12), inset 0 0 40px rgba(0,0,0,0.4);
+      gap: 10px;
+    }
+    .gp-icon { font-size: 60px; filter: drop-shadow(0 0 16px var(--cyan)); }
+    .gp-label {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      color: var(--cyan);
+      text-shadow: 0 0 16px var(--cyan);
+      text-transform: uppercase;
+    }
+    .gp-sub {
+      font-size: 18px;
+      color: var(--green);
+      letter-spacing: 0.2em;
+      text-shadow: 0 0 10px var(--green);
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <h1>// DENSO ROBOT CONTROL SYSTEM</h1>
+  <div class="badges">
+    <span class="badge" id="badge-robot">ROBOT: --</span>
+    <span class="badge" id="badge-hand">HAND: --</span>
+    <span class="badge" id="badge-gamepad">PAD: --</span>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- LEFT: cameras stacked (top + bottom) -->
+  <div class="left">
+    <div class="camera-card">
+      <div class="camera-label">► BASLER / OVERHEAD</div>
+      <img src="/video/basler" alt="Basler">
+    </div>
+    <div class="camera-card">
+      <div class="camera-label">► USB / SIDE</div>
+      <img src="/video/usb" alt="USB">
+    </div>
+  </div>
+
+  <!-- RIGHT: 1/3 width -->
+  <div class="right">
+
+    <!-- MODE TABS (常時表示) -->
+    <div class="mode-tabs">
+      <button class="tab active" id="tab-pc" onclick="sfxMode();setMode('pc')">PC</button>
+      <button class="tab"        id="tab-gp" onclick="sfxMode();setMode('gamepad')">GAMEPAD</button>
+    </div>
+
+    <!-- COORDINATES (常時表示) -->
+    <div class="coords">
+      <div class="coords-header">// ROBOT POSITION</div>
+      <div class="coord-row"><span class="coord-axis">X  mm</span><span class="coord-val" id="pos-x">---.-</span></div>
+      <div class="coord-row"><span class="coord-axis">Y  mm</span><span class="coord-val" id="pos-y">---.-</span></div>
+      <div class="coord-row"><span class="coord-axis">Z  mm</span><span class="coord-val" id="pos-z">---.-</span></div>
+      <div class="coord-row"><span class="coord-axis">RX °</span><span class="coord-val" id="pos-rx">--.-</span></div>
+      <div class="coord-row"><span class="coord-axis">RY °</span><span class="coord-val" id="pos-ry">--.-</span></div>
+      <div class="coord-row"><span class="coord-axis">RZ °</span><span class="coord-val" id="pos-rz">--.-</span></div>
+    </div>
+
+    <!-- TAB CONTENT -->
+    <div class="tab-content">
+
+      <!-- PC パネル -->
+      <div class="tab-panel active" id="panel-pc">
+        <div class="card" style="flex-shrink:0">
+          <div class="card-title">// MOTION  ±10mm / ±5°</div>
+          <div class="motion-grid">
+            <div class="axis-group">
+              <div class="axis-label">X</div>
+              <div class="btn-row">
+                <button class="btn-dir" onclick="sfxMove();move('x',-1)">◀<span class="lbl">X−</span></button>
+                <button class="btn-dir" onclick="sfxMove();move('x',+1)">▶<span class="lbl">X＋</span></button>
+              </div>
+            </div>
+            <div class="axis-group">
+              <div class="axis-label">RX</div>
+              <div class="btn-row">
+                <button class="btn-dir rot" onclick="sfxMove();move('rx',-1)">↺<span class="lbl">RX−</span></button>
+                <button class="btn-dir rot" onclick="sfxMove();move('rx',+1)">↻<span class="lbl">RX＋</span></button>
+              </div>
+            </div>
+            <div class="axis-group">
+              <div class="axis-label">Y</div>
+              <div class="btn-row">
+                <button class="btn-dir" onclick="sfxMove();move('y',-1)">◀<span class="lbl">Y−</span></button>
+                <button class="btn-dir" onclick="sfxMove();move('y',+1)">▶<span class="lbl">Y＋</span></button>
+              </div>
+            </div>
+            <div class="axis-group">
+              <div class="axis-label">RY</div>
+              <div class="btn-row">
+                <button class="btn-dir rot" onclick="sfxMove();move('ry',-1)">↺<span class="lbl">RY−</span></button>
+                <button class="btn-dir rot" onclick="sfxMove();move('ry',+1)">↻<span class="lbl">RY＋</span></button>
+              </div>
+            </div>
+            <div class="axis-group">
+              <div class="axis-label">Z</div>
+              <div class="btn-row">
+                <button class="btn-dir" onclick="sfxMove();move('z',-1)">▼<span class="lbl">Z−</span></button>
+                <button class="btn-dir" onclick="sfxMove();move('z',+1)">▲<span class="lbl">Z＋</span></button>
+              </div>
+            </div>
+            <div class="axis-group">
+              <div class="axis-label">RZ</div>
+              <div class="btn-row">
+                <button class="btn-dir rot" onclick="sfxMove();move('rz',-1)">↺<span class="lbl">RZ−</span></button>
+                <button class="btn-dir rot" onclick="sfxMove();move('rz',+1)">↻<span class="lbl">RZ＋</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="flex-shrink:0">
+          <button class="btn-gripper" id="btn-gripper" onclick="sfxHand();toggleHand()">HAND TOGGLE</button>
+        </div>
+        <div class="card" style="flex-shrink:0">
+          <button class="btn-reconnect" id="btn-reconnect-pc" onclick="sfxRecon();reconnectRobot()">↺ ROBOT RECONNECT</button>
+        </div>
+        <div class="card" style="flex-shrink:0">
+          <button class="btn-estop" onclick="sfxEstop();emergencyStop()">⚠ EMERGENCY STOP</button>
+        </div>
+      </div>
+
+      <!-- GAMEPAD パネル -->
+      <div class="tab-panel" id="panel-gp">
+        <div class="card" style="flex-shrink:0">
+          <button class="btn-reconnect" id="btn-reconnect-gp" onclick="sfxRecon();reconnectRobot()">↺ ROBOT RECONNECT</button>
+        </div>
+        <div class="card" style="flex-shrink:0">
+          <button class="btn-estop" onclick="sfxEstop();emergencyStop()">⚠ EMERGENCY STOP</button>
+        </div>
+      </div>
+
+    </div><!-- /tab-content -->
+  </div><!-- /right -->
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <span><span class="status-dot" id="dot-robot"></span>DENSO</span>
+  <span><span class="status-dot" id="dot-hand"></span>IAI</span>
+  <span><span class="status-dot" id="dot-gamepad"></span>GAMEPAD</span>
+  <span id="footer-mode" style="margin-left:auto;color:var(--cyan);font-weight:700;text-shadow:0 0 8px var(--cyan);letter-spacing:0.18em;"></span>
+</footer>
+
+<script>
+  // ─── Web Audio サイバーパンク効果音 ───────────────────────────────
+  const _ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function _tone(freq, endFreq, dur, type='square', vol=0.12) {
+    const osc  = _ctx.createOscillator();
+    const gain = _ctx.createGain();
+    const filt = _ctx.createBiquadFilter();
+    filt.type = 'highpass'; filt.frequency.value = 200;
+    osc.connect(filt); filt.connect(gain); gain.connect(_ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, _ctx.currentTime);
+    if (endFreq !== freq)
+      osc.frequency.exponentialRampToValueAtTime(endFreq, _ctx.currentTime + dur);
+    gain.gain.setValueAtTime(vol, _ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, _ctx.currentTime + dur);
+    osc.start(); osc.stop(_ctx.currentTime + dur + 0.01);
+  }
+
+  // 移動ボタン: 上昇する短いチャープ音
+  function sfxMove()  { _tone(600, 1400, 0.07, 'sawtooth', 0.09); }
+  // モード切替: 2段階上昇
+  function sfxMode()  {
+    _tone(500, 1000, 0.08, 'square', 0.12);
+    setTimeout(()=>_tone(1000, 2000, 0.12, 'square', 0.10), 80);
+  }
+  // ハンド: ウィーン降下音 (サーボ感)
+  function sfxHand()  { _tone(1200, 400, 0.18, 'sawtooth', 0.10); }
+  // 再接続: 3段上昇コード
+  function sfxRecon() {
+    _tone(400,400,0.06,'square',0.10);
+    setTimeout(()=>_tone(600,600,0.06,'square',0.10),80);
+    setTimeout(()=>_tone(900,1200,0.14,'square',0.12),160);
+  }
+  // 緊急停止: 警報 (急激な下降 × 3)
+  function sfxEstop() {
+    [0,100,200].forEach(t=>setTimeout(()=>_tone(1800,300,0.18,'sawtooth',0.25),t));
+  }
+
+  let currentMode = "pc";
+
+  async function setMode(mode) {
+    const res  = await fetch("/api/mode", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({mode})
+    });
+    const data = await res.json();
+    currentMode = data.mode;
+    updateModeUI();
+  }
+
+  function updateModeUI() {
+    const gp = currentMode === "gamepad";
+    document.getElementById("tab-pc").classList.toggle("active", !gp);
+    document.getElementById("tab-gp").classList.toggle("active",  gp);
+    document.getElementById("panel-pc").classList.toggle("active", !gp);
+    document.getElementById("panel-gp").classList.toggle("active",  gp);
+    document.getElementById("footer-mode").textContent =
+      gp ? "// MODE: GAMEPAD" : "// MODE: PC";
+  }
+
+  async function move(axis, sign) {
+    await fetch("/api/robot/move", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({axis, sign})
+    });
+  }
+
+  async function toggleHand() {
+    const res  = await fetch("/api/hand/toggle", {method:"POST"});
+    const data = await res.json();
+    document.getElementById("btn-gripper").textContent =
+      data.hand_open ? "HAND: CLOSE" : "HAND: OPEN";
+  }
+
+  async function emergencyStop() {
+    if (!confirm("EXECUTE EMERGENCY STOP?")) return;
+    await fetch("/api/emergency_stop", {method:"POST"});
+  }
+
+  async function pollStatus() {
+    try {
+      const res  = await fetch("/api/status");
+      const data = await res.json();
+      const p    = data.position;
+      document.getElementById("pos-x").textContent  = p.x.toFixed(1);
+      document.getElementById("pos-y").textContent  = p.y.toFixed(1);
+      document.getElementById("pos-z").textContent  = p.z.toFixed(1);
+      document.getElementById("pos-rx").textContent = p.rx.toFixed(1);
+      document.getElementById("pos-ry").textContent = p.ry.toFixed(1);
+      document.getElementById("pos-rz").textContent = p.rz.toFixed(1);
+      setBadge("badge-robot",   data.robot_ok,   "ROBOT");
+      setBadge("badge-hand",    data.hand_ok,    "HAND");
+      setBadge("badge-gamepad", data.gamepad_ok, "PAD");
+      setDot("dot-robot",   data.robot_ok);
+      setDot("dot-hand",    data.hand_ok);
+      setDot("dot-gamepad", data.gamepad_ok);
+      if (data.mode !== currentMode) { currentMode = data.mode; updateModeUI(); }
+      if (currentMode === "pc") {
+        document.getElementById("btn-gripper").textContent =
+          data.hand_open ? "HAND: CLOSE" : "HAND: OPEN";
+      }
+    } catch(e) {}
+  }
+
+  function setBadge(id, ok, label) {
+    const el = document.getElementById(id);
+    el.textContent = label + ": " + (ok ? "OK" : "NG");
+    el.className   = "badge " + (ok ? "ok" : "error");
+  }
+  function setDot(id, ok) {
+    document.getElementById(id).className = "status-dot " + (ok ? "ok" : "err");
+  }
+
+  async function reconnectRobot() {
+    const btn = document.getElementById("btn-reconnect");
+    btn.disabled = true;
+    btn.textContent = "↺ RECONNECTING...";
+    try {
+      const res  = await fetch("/api/robot/reconnect", {method:"POST"});
+      const data = await res.json();
+      btn.textContent = data.ok ? "↺ RECONNECT OK" : "↺ RECONNECT FAILED";
+      setTimeout(() => { btn.textContent = "↺ ROBOT RECONNECT"; btn.disabled = false; }, 2000);
+    } catch(e) {
+      btn.textContent = "↺ ERROR";
+      setTimeout(() => { btn.textContent = "↺ ROBOT RECONNECT"; btn.disabled = false; }, 2000);
+    }
+  }
+
+  updateModeUI();
+  pollStatus();
+  setInterval(pollStatus, 200);   // 200ms ポーリング
+</script>
+</body>
+</html>
